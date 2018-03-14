@@ -1,0 +1,30 @@
+[OSEv3:children]
+masters
+nodes
+
+[OSEv3:vars]
+ansible_ssh_user=centos
+ansible_become=true
+#ansible_python_interpreter=/usr/bin/python3
+
+#containerized=true
+#openshift_release=v3.9
+#openshift_version="3.9"
+openshift_deployment_type=origin
+openshift_master_identity_providers=[{'name': 'allow_all', 'login': 'true', 'challenge': 'true', 'kind': 'AllowAllPasswordIdentityProvider'}]
+openshift_disable_check=docker_storage,docker_storage_driver,memory_availability
+openshift_master_cluster_public_hostname="master1.os.testing"
+#docker_version=ce
+openshift_disable_check=disk_availability,docker_storage,memory_availability
+
+
+[masters]
+master1.os.testing openshift_hostname="master1.os.testing"
+
+[etcd]
+master1.os.testing openshift_hostname="master1.os.testing"
+
+[nodes]
+master1.os.testing openshift_schedulable=true openshift_hostname=master1.os.testing openshift_node_labels="{'region': 'infra', 'zone': 'DE-FRA-1'}"
+worker1.os.testing openshift_hostname=worker1.os.testing openshift_node_labels="{'zone': 'DE-FRA-1'}"
+worker2.os.testing openshift_hostname=worker2.os.testing openshift_node_labels="{'zone': 'DE-FRA-1'}"

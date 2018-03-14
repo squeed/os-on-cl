@@ -1,0 +1,79 @@
+[Unit]
+Description=OpenShift Node in rkt fly
+# TODO: dependencies on openvswitch
+# TODO: dependencies on dnsmasq
+
+After=docker.service
+Wants=docker.service
+
+
+[Service]
+#TODO: notify
+Type=simple
+ExecStartPre=/bin/mkdir -p /etc/kubernetes/manifests
+ExecStartPre=/bin/mkdir -p /srv/kubernetes/manifests
+ExecStartPre=/bin/mkdir -p /etc/kubernetes/checkpoint-secrets
+ExecStartPre=/bin/mkdir -p /etc/kubernetes/cni/net.d
+ExecStartPre=/bin/mkdir -p /etc/cni/net.d
+ExecStartPre=/bin/mkdir -p /var/lib/cni
+ExecStartPre=/bin/mkdir -p /var/lib/kubelet/pki
+ExecStartPre=/bin/mkdir -p /var/lib/origin
+ExecStartPre=-/usr/bin/rkt rm --uuid-file=/var/cache/kubelet-pod.uuid
+
+
+LimitNOFILE=65536
+LimitCORE=infinity
+SyslogIdentifier=origin-node
+Restart=always
+RestartSec=5s
+TimeoutStartSec=300
+OOMScoreAdjust=-999
+
+ExecStart=/usr/bin/rkt \
+	--trust-keys-from-https \
+	--insecure-options=image \
+	run \
+	--uuid-file-save=/var/cache/kubelet-pod.uuid \
+	--volume=resolv,kind=host,source=/etc/resolv.conf \
+	--mount volume=resolv,target=/etc/resolv.conf \
+	--volume=etc-origin,kind=host,source=/etc/origin \
+	--mount volume=etc-origin,target=/etc/origin \
+	--volume=etc-cni,kind=host,source=/etc/cni \
+	--mount volume=etc-cni,target=/etc/cni \
+	--volume var-log,kind=host,source=/var/log \
+	--mount volume=var-log,target=/var/log \
+	--volume var-lib-origin,kind=host,source=/var/lib/origin,recursive=true \
+	--mount volume=var-lib-origin,target=/var/lib/origin \
+	--volume var-lib-docker,kind=host,source=/var/lib/docker \
+	--mount volume=var-lib-docker,target=/var/lib/docker \
+	--volume var-lib-cni,kind=host,source=/var/lib/cni \
+	--mount volume=var-lib-cni,target=/var/lib/cni \
+	--volume opt-cni,kind=host,source=/opt/cni \
+	--mount volume=opt-cni,target=/opt/cni \
+	--volume run-docker,kind=host,source=/run/docker \
+	--mount volume=run-docker,target=/run/docker \
+	--volume run-docker-sock,kind=host,source=/run/docker.sock \
+	--mount volume=run-docker-sock,target=/run/docker.sock \
+	--volume run-docker-pid,kind=host,source=/run/docker.pid \
+	--mount volume=run-docker-pid,target=/run/docker.pid \
+	--volume run-openvswitch,kind=host,source=/run/openvswitch \
+	--mount volume=run-openvswitch,target=/run/openvswitch \
+	--volume lib-modules,kind=host,source=/lib/modules \
+	--mount volume=lib-modules,target=/lib/modules \
+	--volume coreos-etc-ssl-certs,kind=host,source=/etc/ssl/certs,readOnly=true \
+	--mount volume=coreos-etc-ssl-certs,target=/etc/ssl/certs \
+        --volume coreos-usr-share-certs,kind=host,source=/usr/share/ca-certificates,readOnly=true \
+        --mount volume=coreos-usr-share-certs,target=/usr/share/ca-certificates \
+	--stage1-from-dir=stage1-fly.aci \
+	--hosts-entry host \
+	quay.io/casey_callendrello/openshift-hyperkube-testing:v3.7.0-casey1 \
+	--working-dir=/var/lib/origin \
+	--exec=/usr/bin/openshift \
+	--set-env="OPENSHIFT_CONTAINERIZED=false" \
+	-- \
+	start node --config=/etc/origin/node/node-config.yaml
+
+ExecStop=-/usr/bin/rkt stop --uuid-file=/var/cache/kubelet-pod.uuid
+
+[Install]
+WantedBy=multi-user.target

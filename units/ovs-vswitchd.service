@@ -1,0 +1,32 @@
+[Unit]
+Description=Open vSwitch Forwarding Unit
+After=ovsdb-server.service network-pre.target
+Before=network.target network.service
+Requires=ovsdb-server.service
+
+[Service]
+Type=simple
+
+# Create uuid file
+ExecStart=/usr/bin/rkt \
+	--trust-keys-from-https \
+	--insecure-options=image \
+	run \
+	--volume=etc-openvswitch,kind=host,source=/etc/openvswitch \
+	--mount volume=etc-openvswitch,target=/etc/openvswitch \
+	--volume run,kind=host,source=/run \
+	--mount volume=run,target=/run \
+	--volume var-lib-openvswitch,kind=host,source=/var/lib/openvswitch \
+	--mount volume=var-lib-openvswitch,target=/var/lib/openvswitch \
+	--volume lib-modules,kind=host,source=/lib/modules \
+	--mount volume=lib-modules,target=/lib/modules \
+	--volume etc-ssl-certs,kind=host,source=/etc/ssl/certs,readOnly=true \
+	--mount volume=etc-ssl-certs,target=/etc/ssl/certs \
+        --volume usr-share-certs,kind=host,source=/usr/share/ca-certificates,readOnly=true \
+        --mount volume=usr-share-certs,target=/usr/share/ca-certificates \
+	--stage1-from-dir=stage1-fly.aci \
+	--hosts-entry host \
+	quay.io/casey_callendrello/openshift-hyperkube-testing:v3.7.0-casey1 \
+	--exec=/sbin/ovs-vswitchd \
+	-- \
+	unix:/run/openvswitch/db.sock -vconsole:info --no-chdir --pidfile=/run/openvswitch/ovs-vswitchd.pid 
