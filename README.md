@@ -21,8 +21,6 @@ First, you probably want to put NetworkManager in to "dnsmasq"  mode, which allo
     mkdir worker3; cd worker3
     sudo openshift admin create-api-client-config --client-dir=. --groups=system:nodes --user=system:node:worker3.os.testing --certificate-authority=/etc/origin/master/ca.crt --signer-cert=/etc/origin/master/ca.crt --master "https://master1.os.testing:8443" --signer-key=/etc/origin/master/ca.key --signer-serial=/etc/origin/master/ca.serial.txt
     sudo openshift admin ca create-server-cert --cert=server.crt --key=server.key --expire-days=720 --hostnames=worker3.os.testing,192.168.124.52 --signer-cert=/etc/origin/master/ca.crt --signer-key=/etc/origin/master/ca.key --signer-serial=/etc/origin/master/ca.serial.txt
-    sudo openshift admin create-api-client-config --client-dir=. --groups=system:nodes --user=system:node:worker4.os.testing --certificate-authority=/etc/origin/master/ca.crt --signer-cert=/etc/origin/master/ca.crt --master "https://master1.os.testing:8443" --signer-key=/etc/origin/master/ca.key --signer-serial=/etc/origin/master/ca.serial.txt
-    sudo openshift admin ca create-server-cert --cert=server.crt --key=server.key --expire-days=720 --hostnames=worker4.os.testing,192.168.124.52 --signer-cert=/etc/origin/master/ca.crt --signer-key=/etc/origin/master/ca.key --signer-serial=/etc/origin/master/ca.serial.txt
     sudo chown -R centos .
 ```
 7. Copy the generated files locally. "Borrow" the CNI plugins while we're at it
