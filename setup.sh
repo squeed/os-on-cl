@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 #
 # Some helper functions for bringing up a Centos and CL cluster
@@ -33,7 +33,6 @@ function getAssets {
 
 
 function init {
-    #createNetwork
     createConfigImages $1
 }
 
@@ -67,21 +66,21 @@ function createNode {
     mac="$2";
     ip="$3";
 
-    sudo virsh net-update $NET_NAME add ip-dhcp-host \
+    virsh net-update $NET_NAME add ip-dhcp-host \
           "<host mac='$mac' name='$name.os.testing' ip='$ip' />" --live --config
     echo "create $name.qcow2"
 
     disk_path="/var/lib/libvirt/images/$name.qcow2"
     config_path="/var/lib/libvirt/images/$name-cfg.iso"
 
-    sudo qemu-img create \
+    qemu-img create \
         -f qcow2 \
-        -o backing_file=$CENTOS_BACKING_IMAGE \
+        -o backing_file=$(pwd)/$CENTOS_BACKING_IMAGE \
         $disk_path;
 
-    sudo cp $CLOUD_CONFIG_IMAGE $config_path;
+    cp $CLOUD_CONFIG_IMAGE $config_path;
     
-    sudo virt-install \
+    virt-install \
         --name $name \
         --disk path=$disk_path,format=qcow2,bus=virtio \
         --disk path=$config_path,device=cdrom \
@@ -95,18 +94,18 @@ function createCoreosNode {
     mac="$2";
     ip="$3";
 
-    sudo virsh net-update $NET_NAME add ip-dhcp-host \
+    virsh net-update $NET_NAME add ip-dhcp-host \
           "<host mac='$mac' name='$name.os.testing' ip='$ip' />" --live --config
 
-    sudo qemu-img create \
+    qemu-img create \
         -f qcow2 \
-        -o backing_file=$COREOS_BACKING_IMAGE \
+        -o backing_file=$(pwd)/$COREOS_BACKING_IMAGE \
         /var/lib/libvirt/images/$name.qcow2;
 
-    sudo cp $IGNITION_CONFIG /var/lib/libvirt/manifests/${name}.ignition
+    cp $IGNITION_CONFIG /var/lib/libvirt/manifests/${name}.ignition
 
     echo "virt-install";
-    sudo virt-install \
+    virt-install \
         --name $name \
         --network=network=$NET_NAME,mac=$mac \
         --disk path=/var/lib/libvirt/images/$name.qcow2,format=qcow2,bus=virtio \
@@ -119,8 +118,8 @@ function createCoreosNode {
 function deleteNode {
     name="$1";
 
-    sudo virsh destroy $name;
-    sudo virsh undefine $name --remove-all-storage;
+    virsh destroy $name;
+    virsh undefine $name --remove-all-storage;
 }
 
 function deleteNodes {
@@ -132,6 +131,7 @@ function deleteNodes {
 
 
 function createNodes {
+  createNetwork
   createNode master1 52:54:00:00:00:10 192.168.124.10
   createNode worker1 52:54:00:00:00:50 192.168.124.50
   createNode worker2 52:54:00:00:00:51 192.168.124.51
